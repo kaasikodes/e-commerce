@@ -1,0 +1,14 @@
+{
+  "folders": [
+	{
+		"path": ".."
+	},
+	{
+		"path": "../../getting started"
+	},
+	{
+		"path": "../../../node-playground/inventory-management"
+	}
+],
+  "settings": {}
+}
