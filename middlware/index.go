@@ -28,13 +28,13 @@ func MiddlewareChain(middlewares ...Middleware) Middleware {
 
 func RequireAuthMiddleware(userRepo types.UserRepository) Middleware {
 	return func(next http.HandlerFunc ) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+		return func(w http.ResponseWriter, r *http.Request)  {
 			tokenStr, err := utils.GetAccessTokenFromRequest(r)
 			if err != nil {
 				utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, []error{err})
 				return
 			}
-			// validate jwt
+			// validate jwt 
 			token, err := utils.ValidateJWT(tokenStr)
 			
 			if err != nil {
