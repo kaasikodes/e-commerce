@@ -291,7 +291,7 @@ func (r *UserRepository) RetrieveUsers(input types.RetrievUsersInput) (types.Pag
 func (r *UserRepository) RetrieveUserByID(id string) (models.User, error){
 	db := r.db
 	// prepare query
-	query := `SELECT ID, Name, Email, Image, CreatedAt, UpdatedAt FROM User WHERE ID = ?`
+	query := `SELECT ID, Name, Email, Image, Password, EmailVerified, CreatedAt, UpdatedAt FROM User WHERE ID = ?`
 	// create a context as a responsible developer (to handle network error) that does not wish to waste time when something doesb't work
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultContextTimeOut)
 	defer cancel()
@@ -304,7 +304,7 @@ func (r *UserRepository) RetrieveUserByID(id string) (models.User, error){
 	defer stmt.Close() //close the statement after use
 	// execute the statement
 	
-	 err = stmt.QueryRowContext(ctx,  id).Scan(&user.ID, &user.Name, &user.Email, &user.Image, &user.CreatedAt, &user.UpdatedAt)
+	 err = stmt.QueryRowContext(ctx,  id).Scan(&user.ID, &user.Name, &user.Email, &user.Image, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
 	 if err !=nil {
 		return user, err
 	}
@@ -315,7 +315,7 @@ func (r *UserRepository) RetrieveUserByID(id string) (models.User, error){
 func (r *UserRepository) RetrieveUserByEmail(email string) (models.User, error){
 	db := r.db
 	// prepare query
-	query := `SELECT ID, Name, Email, Image, CreatedAt, UpdatedAt FROM User WHERE Email = ?`
+	query := `SELECT ID, Name, Email, Image, Password, EmailVerified, CreatedAt, UpdatedAt FROM User WHERE Email = ?`
 	// create a context as a responsible developer (to handle network error) that does not wish to waste time when something doesb't work
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultContextTimeOut)
 	defer cancel()
@@ -328,7 +328,7 @@ func (r *UserRepository) RetrieveUserByEmail(email string) (models.User, error){
 	defer stmt.Close() //close the statement after use
 	// execute the statement
 	
-	 err = stmt.QueryRowContext(ctx,  email).Scan(&user.ID, &user.Name, &user.Email, &user.Image, &user.CreatedAt, &user.UpdatedAt)
+	 err = stmt.QueryRowContext(ctx,  email).Scan(&user.ID, &user.Name, &user.Email, &user.Image, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
 	 if err !=nil {
 		return user, err
 	}

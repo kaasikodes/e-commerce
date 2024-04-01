@@ -189,7 +189,15 @@ func (c *CategoryController) GetCategoryHandler(w http.ResponseWriter, r *http.R
 	utils.WriteJson(w, http.StatusOK, constants.MsgCategoryRetrieved,  category)
 		
 }
+
+
 func (c *CategoryController) GetCategoriesHandler(w http.ResponseWriter, r *http.Request)  {
+	user, err := utils.RetrieveUserFromRequestContext(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
+		return
+	}
+	fmt.Println("User is: ", user)
 	repo := c.categoryRepo
 	// get query params
 	pageSizeStr := r.URL.Query().Get(constants.QueryPageSize)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kaasikodes/e-commerce-go/constants"
+	"github.com/kaasikodes/e-commerce-go/models"
 	"github.com/kaasikodes/e-commerce-go/types"
 	"github.com/kaasikodes/e-commerce-go/utils"
 )
@@ -230,7 +231,46 @@ func (h *AuthController) VerifyUserHandler(w http.ResponseWriter, r *http.Reques
 		
 }
 
+func  (h *AuthController) ensureUserEmailIsVerified(user models.User, payloadEmail string) (bool, error) {
+	emailVerified := true
+	if !user.EmailVerified {
+		
+		token, err := h.tokenRepo.RetrieveVerificationToken(payloadEmail)
+		if err != nil {
+			emailVerified = false
+			return emailVerified, err
+		}
+		if  time.Now().After(token.ExpiresAt) {
+			// delete token
+			err = h.tokenRepo.DeleteVerificationToken(payloadEmail)
+			if err != nil {
+				emailVerified = false
+				return emailVerified, err
+			}
+			// create new token
+			token, err = h.tokenRepo.CreateVerificationToken(types.CreateTokenInput{
+				Email: user.Email,
+			})
+			if err != nil {
+				emailVerified = false
+				return emailVerified, err
+			}
+			
+		}
+		
+		err = sendVerificationEmail(user.Email, token.Token)
+	
+		if err != nil {
+			emailVerified = false
+			return emailVerified, err
+		}
+		err = fmt.Errorf("user not verified, please check your email, a verification link has been sent to your email")
+		return emailVerified, err
+	}
+	return emailVerified, nil
+}
 // login user
+
 func  (h *AuthController) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var payload types.LoginUserInput
 	err:= utils.ParseJSON(r, &payload);
@@ -252,50 +292,35 @@ func  (h *AuthController) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// check if password is correct
-	isValidPassword := utils.CheckPasswordHash(payload.Password, user.Password)
+	isValidPassword := utils.CheckPasswordHash(payload.Password,user.Password)
+	
 	if !isValidPassword {
 		err = fmt.Errorf("invalid password")
 		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, []error{err})
 		return
 	}
-	// check if the user has been verified
-	if !user.EmailVerified {
-		
-		token, err := h.tokenRepo.RetrieveVerificationToken(payload.Email)
-		if err != nil {
-			utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
-			return
-		}
-		if  time.Now().After(token.ExpiresAt) {
-			// delete token
-			err = h.tokenRepo.DeleteVerificationToken(payload.Email)
-			if err != nil {
-				utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
-				return
-			}
-			// create new token
-			token, err = h.tokenRepo.CreateVerificationToken(types.CreateTokenInput{
-				Email: user.Email,
-			})
-			if err != nil {
-				utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
-				return
-			}
-			
-		}
-		
-		err = sendVerificationEmail(user.Email, token.Token)
-	
-		if err != nil {
-			utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
-			return
-		}
-		err = fmt.Errorf("user not verified, please check your email, a verification link has been sent to your email")
-		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, []error{err})
+	// check if the user has been 
+	isEmailVerified, err := h.ensureUserEmailIsVerified(user, payload.Email)
+	if err != nil || !isEmailVerified {
+		utils.WriteError(w, http.StatusBadRequest, "User not verified!", []error{err})
 		return
 	}
-	//TODO: create access n refresh jwt token for user
-	
-	utils.WriteJson(w, http.StatusOK, "User logged in successfully!", user)
 
+	
+	token, err := utils.CreateJWT(user.ID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
+		return
+	}
+	authData := createAuthResponseData(user, token)
+	utils.WriteJson(w, http.StatusOK, "User logged in successfully!", authData)
+
+}
+
+
+func createAuthResponseData(user models.User, token string) map[string]interface{} {
+	return map[string]interface{}{
+		"accessToken": token,
+		"user": user,
+	}
 }

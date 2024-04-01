@@ -16,11 +16,17 @@ const (
 	DBMaxOpenConnections    = 10
 	DBMaxIdleConnections    = 10
 )
+
+type jwtAuthUserContextKey string
+type jwtUserIdMapKey string
 // default values
 const (
 	DefaultPageSize 		= 20
 	DefaultContextTimeOut 	= time.Second * 5
 	FrontendUrl = "http://localhost:3000"
+	JWTSecret	= "secret"
+	JWTExpirationTime = time.Hour * 24
+	
 	
 )
 // query keys for urls
@@ -45,6 +51,9 @@ var (
 	VerificationTokenExpiresAt = time.Now().Add(time.Hour * 24)
 	PasswordResetTokenExpiresAt = time.Now().Add(time.Hour * 4)
 	ValidUserRoles = []string{"customer", "seller"}
+	JWTAuthUserContextKey jwtAuthUserContextKey  = "user"
+	JWTUserIdMapKey jwtUserIdMapKey = "userID"
+
 
 )
 
