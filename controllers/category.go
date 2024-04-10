@@ -95,7 +95,7 @@ func (c *CategoryController) AddCategoryHandler(w http.ResponseWriter, r *http.R
 		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
 		return
 	}
-	utils.WriteJson(w, http.StatusOK, constants.MsgCategoryRetrieved,  category)
+	utils.WriteJson(w, http.StatusOK, "Category added successfully!",  category)
 		
 }
 // csv columns
