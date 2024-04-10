@@ -9,8 +9,8 @@ type Product struct {
 	Price       int    `json:"price"`
 	Quantity    int    `json:"quantity"`
 	CategoryID  string `json:"categoryId"`
-	OwnerID     string `json:"ownerId"`
-	Owner       *Seller
+	SellerID     string `json:"sellerId"`
+	Seller       *Seller
 	Category    *Category
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`

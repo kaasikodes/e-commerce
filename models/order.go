@@ -4,7 +4,7 @@ import "time"
 
 type Order struct {
 	ID                string      `json:"id"`
-	UserID            string      `json:"userId"`
+	CustomerID            string      `json:"customerId"`
 	Items             []OrderItem `json:"items"`
 	Payment           Payment     `json:"payment"`
 	TotalAmount       int         `json:"totalAmount"`
