@@ -233,6 +233,152 @@ func (r *UserRepository) UpdateUserProfile(id string, data types.UpdateUserProfi
 	
 	return user, nil
 }
+
+func (r *UserRepository) RetrieveSellers(input types.RetrievUsersInput) (types.PaginatedDataOutput, error) {
+    db := r.db
+    // Prepare query
+    query := `
+	SELECT 
+		s.ID,
+		s.UserID,
+		s.CreatedAt,
+		s.UpdatedAt,
+		u.ID AS user_id,
+		u.Name AS user_name,
+		u.Email AS user_email,
+		u.Image AS user_image,
+		u.CreatedAt AS user_created_at, 
+		u.UpdatedAt AS user_updated_at,
+		(SELECT COUNT(*) FROM Seller) AS total_sellers
+	FROM 
+		Seller s
+	JOIN 
+		User u ON s.UserID = u.ID
+	WHERE 
+		s.ID > ? 
+	ORDER BY 
+		s.ID ASC
+	LIMIT ?
+
+    `
+
+    // Create a context with timeout
+    ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultContextTimeOut)
+    defer cancel()
+
+    // Prepare the statement
+    output := types.PaginatedDataOutput{}
+    stmt, err := db.PrepareContext(ctx, query)
+    if err != nil {
+        return output, err
+    }
+    defer stmt.Close()
+
+    // Execute the statement
+    sellers := []models.Seller{}
+    rows, err := stmt.QueryContext(ctx, utils.Ternary(input.Pagination.NextCursor == "", "", input.Pagination.NextCursor), utils.Ternary(input.Pagination.PageSize == 0, constants.DefaultPageSize, input.Pagination.PageSize))
+    if err != nil {
+        return output, err
+    }
+    defer rows.Close()
+    total := 0
+    for rows.Next() {
+        seller := models.Seller{}
+		seller.User = &models.User{}
+        err = rows.Scan(&seller.ID, &seller.UserID, &seller.CreatedAt, &seller.UpdatedAt, &seller.User.ID, &seller.User.Name, &seller.User.Email, &seller.User.Image, &seller.User.CreatedAt, &seller.User.UpdatedAt, &total)
+        if err != nil {
+            return output, err
+        }
+        sellers = append(sellers, seller)
+    }
+    lastItemId := ""
+    // Select last item in the list
+    if len(sellers) > 0 {
+        lastItem := sellers[len(sellers)-1]
+        lastItemId = lastItem.ID
+    }
+
+    output = types.PaginatedDataOutput{
+        Data:      sellers,
+        NextCursor: lastItemId,
+        HasMore:    len(sellers) < total,
+        Total:      total,
+    }
+    return output, nil
+}
+
+func (r *UserRepository) RetrieveCustomers(input types.RetrievUsersInput) (types.PaginatedDataOutput, error){
+	db := r.db
+	// prepare query
+    query := `
+	SELECT 
+		s.ID,
+		s.UserID,
+		s.CreatedAt,
+		s.UpdatedAt,
+		u.ID AS user_id,
+		u.Name AS user_name,
+		u.Email AS user_email,
+		u.Image AS user_image,
+		u.CreatedAt AS user_created_at, 
+		u.UpdatedAt AS user_updated_at,
+		(SELECT COUNT(*) FROM Seller) AS total_sellers
+	FROM 
+		Customer s
+	JOIN 
+		User u ON s.UserID = u.ID
+	WHERE 
+		s.ID > ? 
+	ORDER BY 
+		s.ID ASC
+	LIMIT ?
+
+    `
+
+
+	// create a context as a responsible developer (to handle network error) that does not wish to waste time when something doesb't work
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultContextTimeOut)
+	defer cancel()
+	// prepare the statement
+	output := types.PaginatedDataOutput{}
+	stmt, err := db.PrepareContext(ctx, query )
+	if err !=nil {
+		return output, err
+	}
+	defer stmt.Close() //close the statement after use
+	// execute the statement
+	customers := []models.Customer{}
+	rows, err := stmt.QueryContext(ctx, utils.Ternary(input.Pagination.NextCursor == "", "", input.Pagination.NextCursor), utils.Ternary(input.Pagination.PageSize == 0, constants.DefaultPageSize, input.Pagination.PageSize))
+	if err !=nil {
+		return output, err
+	}
+	defer rows.Close()
+	total := 0
+	for rows.Next() {
+		customer := models.Customer{}
+		customer.User = &models.User{}
+		err = rows.Scan(&customer.ID, &customer.UserID, &customer.CreatedAt, &customer.UpdatedAt, &customer.User.ID, &customer.User.Name, &customer.User.Email, &customer.User.Image, &customer.User.CreatedAt, &customer.User.UpdatedAt, &total)
+		if err !=nil {
+			return output, err
+		}
+		customers = append(customers, customer)
+	}
+	lastItemId := ""
+	// select last item in the list
+	if len(customers) > 0 {
+		lastItem := customers[len(customers)-1]
+		lastItemId = lastItem.ID
+	}
+
+	output = types.PaginatedDataOutput{
+		Data: customers,
+		NextCursor: lastItemId,
+		HasMore:    len(customers) < total,
+		Total:      total,
+	}
+	return output, nil
+
+}
 func (r *UserRepository) RetrieveUsers(input types.RetrievUsersInput) (types.PaginatedDataOutput, error){
 	db := r.db
 	// prepare query
@@ -288,15 +434,43 @@ func (r *UserRepository) RetrieveUsers(input types.RetrievUsersInput) (types.Pag
 	return output, nil
 
 }
+
 func (r *UserRepository) RetrieveUserByID(id string) (models.User, error){
 	db := r.db
 	// prepare query
-	query := `SELECT ID, Name, Email, Image, Password, EmailVerified, CreatedAt, UpdatedAt FROM User WHERE ID = ?`
+	query := `SELECT
+				u.ID AS user_id,
+				u.Name AS user_name,
+				u.Email AS user_email,
+				u.Image AS user_image,
+				u.Password AS user_password,
+				u.EmailVerified AS user_email_verified,
+				u.CreatedAt AS user_created_at,
+				u.UpdatedAt AS user_updated_at,
+				c.ID AS customer_id,
+				c.UserID AS customer_user_id,
+				c.CreatedAt AS customer_created_at,
+				c.UpdatedAt AS customer_updated_at,
+				s.ID AS seller_id,
+				s.UserID AS seller_user_id,
+				s.CreatedAt AS seller_created_at,
+				s.UpdatedAt AS seller_updated_at
+			FROM
+				User u
+			JOIN
+				Customer c ON u.ID = c.UserID
+			JOIN
+				Seller s ON u.ID = s.UserID
+			WHERE
+				u.ID = ?
+	`
 	// create a context as a responsible developer (to handle network error) that does not wish to waste time when something doesb't work
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultContextTimeOut)
 	defer cancel()
 	// prepare the statement
 	user := models.User{}
+	user.Customer = &models.Customer{}
+	user.Seller = &models.Seller{}
 	stmt, err := db.PrepareContext(ctx, query)
 	if err !=nil {
 		return user, err
@@ -304,23 +478,49 @@ func (r *UserRepository) RetrieveUserByID(id string) (models.User, error){
 	defer stmt.Close() //close the statement after use
 	// execute the statement
 	
-	 err = stmt.QueryRowContext(ctx,  id).Scan(&user.ID, &user.Name, &user.Email, &user.Image, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
+	 err = stmt.QueryRowContext(ctx,  id).Scan(&user.ID, &user.Name, &user.Email, &user.Image, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt, &user.Customer.ID, &user.Customer.UserID, &user.Customer.CreatedAt, &user.Customer.UpdatedAt, &user.Seller.ID, &user.Seller.UserID, &user.Seller.CreatedAt, &user.Seller.UpdatedAt)
 	 if err !=nil {
 		return user, err
 	}
-	
 	return user, nil
 
 }
 func (r *UserRepository) RetrieveUserByEmail(email string) (models.User, error){
 	db := r.db
 	// prepare query
-	query := `SELECT ID, Name, Email, Image, Password, EmailVerified, CreatedAt, UpdatedAt FROM User WHERE Email = ?`
+	query := `SELECT
+				u.ID AS user_id,
+				u.Name AS user_name,
+				u.Email AS user_email,
+				u.Image AS user_image,
+				u.Password AS user_password,
+				u.EmailVerified AS user_email_verified,
+				u.CreatedAt AS user_created_at,
+				u.UpdatedAt AS user_updated_at,
+				c.ID AS customer_id,
+				c.UserID AS customer_user_id,
+				c.CreatedAt AS customer_created_at,
+				c.UpdatedAt AS customer_updated_at,
+				s.ID AS seller_id,
+				s.UserID AS seller_user_id,
+				s.CreatedAt AS seller_created_at,
+				s.UpdatedAt AS seller_updated_at
+			FROM
+				User u
+			JOIN
+				Customer c ON u.ID = c.UserID
+			JOIN
+				Seller s ON u.ID = s.UserID
+			WHERE
+				u.Email = ?
+	`
 	// create a context as a responsible developer (to handle network error) that does not wish to waste time when something doesb't work
 	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultContextTimeOut)
 	defer cancel()
 	// prepare the statement
 	user := models.User{}
+	user.Customer = &models.Customer{}
+	user.Seller = &models.Seller{}
 	stmt, err := db.PrepareContext(ctx, query)
 	if err !=nil {
 		return user, err
@@ -328,11 +528,10 @@ func (r *UserRepository) RetrieveUserByEmail(email string) (models.User, error){
 	defer stmt.Close() //close the statement after use
 	// execute the statement
 	
-	 err = stmt.QueryRowContext(ctx,  email).Scan(&user.ID, &user.Name, &user.Email, &user.Image, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
+	 err = stmt.QueryRowContext(ctx,  email).Scan(&user.ID, &user.Name, &user.Email, &user.Image, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt, &user.Customer.ID, &user.Customer.UserID, &user.Customer.CreatedAt, &user.Customer.UpdatedAt, &user.Seller.ID, &user.Seller.UserID, &user.Seller.CreatedAt, &user.Seller.UpdatedAt)
 	 if err !=nil {
 		return user, err
 	}
-	
 	return user, nil
 
 }

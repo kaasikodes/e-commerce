@@ -35,6 +35,7 @@ func (s *ApiServer) Start() error {
 	// define routes and map them to controllers
 	routes.NewAuthRoutes(userRepo, tokenRepo).RegisterAuthRoutes(subrouter)
 	routes.NewCategoryRoutes(categoryRepo, userRepo).RegisterCategoryRoutes(subrouter)
+	routes.NewUserRoutes(userRepo).RegisterUserRoutes(subrouter)
 
 	log.Println("Listening on ...", s.addr)
 	

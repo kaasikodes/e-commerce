@@ -10,7 +10,6 @@ type User struct {
 	Image     string `json:"image"`
 	Customer  *Customer `json:"customer"`
 	Seller    *Seller `json:"seller"`
-	Cart      *Cart `json:"cart"`
 	EmailVerified bool `json:"emailVerified"`
 	EmailVerifiedAt time.Time `json:"emailVerifiedAt"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -20,6 +19,8 @@ type User struct {
 type Customer struct {
 	ID     string  `json:"id"`
 	UserID string  `json:"userId"`
+	Cart      *Cart `json:"cart"`
+	User    *User `json:"user"`
 	Orders []Order `json:"orders"`
 	CreatedAt         time.Time   `json:"createdAt"`
 	UpdatedAt         time.Time   `json:"updatedAt"`
@@ -28,6 +29,7 @@ type Customer struct {
 type Seller struct {
 	ID       string `json:"id"`
 	UserID   string `json:"userId"`
+	User    *User `json:"user"`
 	Products []Product `json:"products"`
 	CreatedAt         time.Time   `json:"createdAt"`
 	UpdatedAt         time.Time   `json:"updatedAt"`

@@ -48,6 +48,8 @@ type UserRepository interface {
 	VerifyUser(email string) (models.User, error)
 	UpdateUserProfile(id string, data UpdateUserProfileInput) (models.User, error)
 	RetrieveUsers(input RetrievUsersInput) (PaginatedDataOutput, error)
+	RetrieveCustomers(input RetrievUsersInput) (PaginatedDataOutput, error)
+	RetrieveSellers(input RetrievUsersInput) (PaginatedDataOutput, error)
 	RetrieveUserByEmail(email string) (models.User, error)
 	RetrieveUserByID(id string) (models.User, error)
 	DeleteUser(id string) (models.User, error)
