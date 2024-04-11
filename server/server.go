@@ -31,11 +31,13 @@ func (s *ApiServer) Start() error {
 	categoryRepo := services.NewCategoryRepository(s.db)
 	tokenRepo := services.NewTokenRepository(s.db)
 	userRepo := services.NewUserRepository(s.db)
+	productRepo := services.NewProductRepository(s.db)
 
 	// define routes and map them to controllers
 	routes.NewAuthRoutes(userRepo, tokenRepo).RegisterAuthRoutes(subrouter)
 	routes.NewCategoryRoutes(categoryRepo, userRepo).RegisterCategoryRoutes(subrouter)
 	routes.NewUserRoutes(userRepo).RegisterUserRoutes(subrouter)
+	routes.NewProductRoutes(userRepo, productRepo, categoryRepo).RegisterProductRoutes(subrouter)
 
 	log.Println("Listening on ...", s.addr)
 	

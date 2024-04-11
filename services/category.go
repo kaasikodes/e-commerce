@@ -90,7 +90,7 @@ func (c *CategoryRepository) UpdateCategory( id string, data models.Category) (m
 }
 
 // Retrieve categories with pagination
-func (c *CategoryRepository) RetrieveCategories(input types.RetrievCategoriesInput) (types.PaginatedDataOutput, error) {
+func (c *CategoryRepository) RetrieveCategories(input types.RetrievCategoriesInput) (types.PaginatedCategoriesDataOutput, error) {
 	db := c.db
 	// prepare query
 	query := `
@@ -104,10 +104,10 @@ func (c *CategoryRepository) RetrieveCategories(input types.RetrievCategoriesInp
 
 
 	// create a context as a responsible developer (to handle network error) that does not wish to waste time when something doesb't work
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultContextTimeOut)
 	defer cancel()
 	// prepare the statement
-	output := types.PaginatedDataOutput{}
+	output := types.PaginatedCategoriesDataOutput{}
 	stmt, err := db.PrepareContext(ctx, query )
 	if err !=nil {
 		return output, err
@@ -136,7 +136,7 @@ func (c *CategoryRepository) RetrieveCategories(input types.RetrievCategoriesInp
 		lastItemId = lastItem.ID
 	}
 
-	output = types.PaginatedDataOutput{
+	output = types.PaginatedCategoriesDataOutput{
 		Data: categories,
 		NextCursor: lastItemId,
 		HasMore:    len(categories) < total,
@@ -151,7 +151,7 @@ func (c *CategoryRepository) RetrieveCategoryByID( id string) (models.Category, 
 	// prepare query
 	query := `SELECT * FROM Category WHERE ID = ?`
 	// create a context as a responsible developer (to handle network error) that does not wish to waste time when something doesb't work
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), constants.DefaultContextTimeOut)
 	defer cancel()
 	// prepare the statement
 	category := models.Category{}
