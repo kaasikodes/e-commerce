@@ -4,7 +4,7 @@ import "time"
 
 type Cart struct {
 	ID        string     `json:"id"`
-	UserID    string     `json:"userId"`
+	CustomerID    string     `json:"customerId"`
 	Items     []CartItem `json:"items"`
 	CreatedAt time.Time  `json:"createdAt"`
 	UpdatedAt time.Time  `json:"updatedAt"`

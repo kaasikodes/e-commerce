@@ -8,6 +8,7 @@ type ForgotPwdInput struct {
 type ResetPwdInput struct {
 	Email     string   `json:"email" validate:"required,email"`
 	Token  string   `json:"token" validate:"required"`
+	Password  string   `validate:"min=6,max=12"`
 }
 type LoginUserInput struct {
 	Email     string   `json:"email" validate:"required,email"`

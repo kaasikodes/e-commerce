@@ -43,7 +43,7 @@ func (h *AuthController) ForgotPwdHandler(w http.ResponseWriter, r *http.Request
 	user, err := repo.RetrieveUserByEmail(payload.Email)
 	if err != nil {
 		err  = fmt.Errorf("user with email %s not found", payload.Email)
-		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
+		utils.WriteError(w, http.StatusBadRequest, "User Error", []error{err})
 		return
 	}
 
@@ -63,7 +63,7 @@ func (h *AuthController) ForgotPwdHandler(w http.ResponseWriter, r *http.Request
 		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
 		return
 	}
-	utils.WriteJson(w, http.StatusOK, "Hello, a password reset link has been sent to your email",  user)
+	utils.WriteJson(w, http.StatusOK, "Hello, a password reset link has been sent to your email",  nil)
 		
 }
 // Register User
@@ -140,6 +140,11 @@ func (h *AuthController) ResetPwdrHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	
+	user, err := u.RetrieveUserByEmail(payload.Email)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "User not found!", []error{err})
+		return
+	}
 	token, err := t.RetrievePasswordResetToken(payload.Email)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, []error{err})
@@ -157,10 +162,11 @@ func (h *AuthController) ResetPwdrHandler(w http.ResponseWriter, r *http.Request
 		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, []error{err})
 		return
 	}
-	// verify user
-	user, err := u.VerifyUser(payload.Email)
+	// update password
+	user, err = u.UpdateUserPassword(user.ID, types.UpdateUserPwdInput{ 
+		Password: payload.Password,
 
-
+	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
 		return
@@ -315,6 +321,57 @@ func  (h *AuthController) LoginUser(w http.ResponseWriter, r *http.Request) {
 	authData := createAuthResponseData(user, token)
 	utils.WriteJson(w, http.StatusOK, "User logged in successfully!", authData)
 
+}
+// auth profile
+func  (h *AuthController) AuthProfile(w http.ResponseWriter, r *http.Request) {
+	user, err := utils.RetrieveUserFromRequestContext(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
+		return
+	}
+	token, err := utils.GetAccessTokenFromRequest(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, []error{err})
+		return
+	}
+
+	authData := createAuthResponseData(user, token)
+	utils.WriteJson(w, http.StatusOK, "User profile successfully!", authData)
+
+}
+
+// Change Password
+func (h *AuthController) ChangePassword(w http.ResponseWriter, r *http.Request)  {
+	u := h.userRepo
+	user, err := utils.RetrieveUserFromRequestContext(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
+		return
+	}
+	var payload types.UpdateUserPwdInput
+	
+	if err:= utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, []error{err})
+		return
+		
+	}
+	errParsed := utils.ValidatePayload(payload)
+	if len(errParsed) > 0{
+	
+		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, errParsed)
+		return
+	}
+	_, err = u.UpdateUserPassword(user.ID, types.UpdateUserPwdInput{
+		Password: payload.Password,
+	})
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
+		return
+	}
+	
+	
+	utils.WriteJson(w, http.StatusOK, "Password changed successfully!",  nil)
+		
 }
 
 
