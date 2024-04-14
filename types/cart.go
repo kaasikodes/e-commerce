@@ -14,5 +14,7 @@ type CartRepository interface {
 	CreateCart(input SaveCartInput, customerId string) (models.Cart, error)
 	DeleteCart(customerId string) error
 	RetrieveCart(customerId string) (models.Cart, error)
+	CheckoutCart(customerId string, userEmail string) (models.Order, error)
+	VerifyPayment(reference string) (VerifyPaystackTransactionResponse, error)
 }
 

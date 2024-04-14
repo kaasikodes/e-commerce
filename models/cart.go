@@ -14,7 +14,7 @@ type CartItem struct {
 	ID        string `json:"id"`
 	ProductID string `json:"productId"`
 	CartID    string `json:"cartId"`
-	Product   Product
+	Product   Product `json:"product"`
 	Quantity  int `json:"quantity"`
 	CreatedAt         time.Time   `json:"createdAt"`
 	UpdatedAt         time.Time   `json:"updatedAt"`

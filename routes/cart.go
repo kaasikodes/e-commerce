@@ -12,20 +12,26 @@ import (
 type CartRoutes struct {
 	cartRepo types.CartRepository
 	userRepo types.UserRepository
+	orderRepo types.OrderRepository
+	paymentRepo types.PaymentRepository
 }
 
-func NewCartRoutes(  cartRepo types.CartRepository,  userRepo types.UserRepository) *CartRoutes {
+func NewCartRoutes(  cartRepo types.CartRepository,  userRepo types.UserRepository, orderRepo types.OrderRepository, paymentRepo types.PaymentRepository) *CartRoutes {
 	return &CartRoutes{
 		cartRepo: cartRepo,
 		userRepo: userRepo,
+		orderRepo: orderRepo,
+		paymentRepo: paymentRepo,
 	}
 }
 
 func (c *CartRoutes) RegisterCartRoutes (router *mux.Router){
-	controller := controllers.NewCartController( c.cartRepo)
+	controller := controllers.NewCartController(c.cartRepo, c.orderRepo, c.paymentRepo)
 	middlewareChain := middleware.MiddlewareChain(middleware.RequireAuthMiddleware(c.userRepo))
 	
 	router.HandleFunc("/cart", middlewareChain(controller.SaveCartHandler)).Methods(http.MethodPost)
+	router.HandleFunc("/cart/checkout", middlewareChain(controller.CheckoutCartHandler)).Methods(http.MethodPost)
+	router.HandleFunc("/cart/checkout/verify-payment/{reference}", middlewareChain(controller.VerifyPaymentHandler)).Methods(http.MethodGet)
 	router.HandleFunc("/cart", middlewareChain(controller.GetCartHandler)).Methods(http.MethodGet)
 	router.HandleFunc("/cart", middlewareChain(controller.DeleteCartHandler)).Methods(http.MethodDelete)
 

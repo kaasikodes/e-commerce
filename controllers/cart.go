@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/kaasikodes/e-commerce-go/constants"
 	"github.com/kaasikodes/e-commerce-go/types"
 	"github.com/kaasikodes/e-commerce-go/utils"
@@ -10,11 +11,15 @@ import (
 
 type CartController struct {
 	cartRepo types.CartRepository
+	orderRepo types.OrderRepository
+	paymentRepo types.PaymentRepository
 }
 
-func NewCartController(cartRepo types.CartRepository) *CartController {
+func NewCartController(cartRepo types.CartRepository, orderRepo types.OrderRepository, paymentRepo types.PaymentRepository) *CartController {
 	return &CartController{
 		cartRepo: cartRepo,
+		orderRepo: orderRepo,
+		paymentRepo: paymentRepo,
 	}
 }
 
@@ -41,6 +46,109 @@ func (c *CartController) DeleteCartHandler(w http.ResponseWriter, r *http.Reques
 }
 
 
+func (c *CartController) VerifyPaymentHandler(w http.ResponseWriter, r *http.Request)  {
+	
+	cartRepo := c.cartRepo
+	paymentRepo := c.paymentRepo
+	reference := mux.Vars(r)["reference"]
+	verfifyResponse, err := cartRepo.VerifyPayment(reference)
+
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Error while verifying payment!", []error{err})
+		return
+	}
+	// if payment is successful
+	// update order payment in db
+	// send mail teling user that payment has been made
+	var finalRes = make(map[string]string)
+	switch verfifyResponse.Data.Status {
+		case constants.PaystackTransactionStatuses.Success:
+			// update the payment status of order in database
+			err = paymentRepo.UpdatePayment(types.UpdatePaymentInput{
+				Paid: true,
+				PaidAt: verfifyResponse.Data.PaidAt,
+			}, reference)
+			if err != nil {
+				utils.WriteError(w, http.StatusInternalServerError, "Error while verifying payment!", []error{err})
+				return
+			}
+			finalRes["paid"] = "true"
+		case constants.PaystackTransactionStatuses.Abandoned:
+			finalRes["paid"] = "false"
+		default:
+			finalRes["paid"] = "false"
+	}
+	
+
+	
+	utils.WriteJson(w, http.StatusOK, "Payment verified!",  finalRes)
+		
+}
+func (c *CartController) CheckoutCartHandler(w http.ResponseWriter, r *http.Request)  {
+	// TODO: Consider making a db transaction for this, since multple tables are involved
+	cartRepo := c.cartRepo
+	orderRepo := c.orderRepo
+	paymentRepo := c.paymentRepo
+	user, err := utils.RetrieveUserFromRequestContext(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
+		return
+	}
+	customerId := user.Customer.ID
+	userEmail := user.Email
+	_, err = cartRepo.RetrieveCart(customerId)
+
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Unable to retrieve customer cart for user!", []error{err})
+		return
+	}
+	virtualOrder, err := cartRepo.CheckoutCart(customerId, userEmail)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "Unable to retrieve virtual order for user!", []error{err})
+		return
+	}
+	
+	// create order in db
+	var createOrderInput types.CreateOrderInput
+	createOrderInput.TotalAmount = virtualOrder.TotalAmount
+	createOrderInput.OrderItems = []types.OrderItemInput{}
+	for _, item := range virtualOrder.Items {
+		createOrderInput.OrderItems = append(createOrderInput.OrderItems, types.OrderItemInput{
+			ProductId: item.ProductID,
+			TotalPrice: item.TotalPrice,
+			Quantity: item.Quantity,
+		})
+	}
+	// virtualOrder.DeliveryAddressID, _ = utils.GenerateRandomID(10)
+	virtualOrder.DeliveryAddressID = "test"
+	orderId, err := orderRepo.CreateOrder(createOrderInput, customerId, virtualOrder.DeliveryAddressID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Error while creating order for cart!", []error{err})
+		return
+	}
+
+	// create payment in db
+	err = paymentRepo.CreatePayment(types.CreatePaymentInput{
+		Reference: virtualOrder.Payment.ID,
+		Amount: virtualOrder.TotalAmount,
+		
+
+	}, orderId)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Error while saving payment for cart!", []error{err})
+		return
+	}
+	// delete cart
+	err = cartRepo.DeleteCart(customerId)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
+		return
+	}
+
+	
+	utils.WriteJson(w, http.StatusOK, "Succesful cart checkout!",  virtualOrder)
+		
+}
 func (c *CartController) SaveCartHandler(w http.ResponseWriter, r *http.Request)  {
 	repo := c.cartRepo
 	user, err := utils.RetrieveUserFromRequestContext(r)

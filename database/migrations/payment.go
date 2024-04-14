@@ -14,9 +14,9 @@ func CreatePaymentTable (db *sql.DB) error{
 		OrderID VARCHAR(255) NOT NULL,
 		Amount INT NOT NULL,
 		Paid BOOLEAN NOT NULL,
-		PaidAt TIMESTAMP,
+		PaidAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		Method VARCHAR(255) NOT NULL,
-		FOREIGN KEY (OrderID) REFERENCES ` + "`Order`" + `(ID)
+		FOREIGN KEY (OrderID) REFERENCES ` + "`Order`" + `(ID) ON DELETE CASCADE
 	)`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)

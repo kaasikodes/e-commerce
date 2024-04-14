@@ -7,7 +7,7 @@ type Order struct {
 	CustomerID            string      `json:"customerId"`
 	Items             []OrderItem `json:"items"`
 	Payment           Payment     `json:"payment"`
-	TotalAmount       int         `json:"totalAmount"`
+	TotalAmount       float64         `json:"totalAmount"`
 	DeliveryAddressID string      `json:"deliveryAddressId"`
 	DeliveryAddress   Address     `json:"deliveryAddress"`
 	CreatedAt         time.Time   `json:"createdAt"`
@@ -20,6 +20,7 @@ type OrderItem struct {
 	OrderID   string `json:"orderId"`
 	Product   Product
 	Quantity  int `json:"quantity"`
+	TotalPrice float64 `json:"totalPrice"`
 	CreatedAt         time.Time   `json:"createdAt"`
 	UpdatedAt         time.Time   `json:"updatedAt"`
 }
