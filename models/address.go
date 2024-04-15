@@ -4,9 +4,11 @@ type Address struct {
 	ID            string `json:"id"`
 	StreetAddress string `json:"streetAddress"`
 	LgaID         string `json:"lgaId"`
-	Lga           Lga
-	State         State
+	Lga           *Lga
+	State         *State
 	StateID       string `json:"stateId"`
+	CountryID     string `json:"countryId"`
+	Country       *Country
 }
 
 type Lga struct {

@@ -46,6 +46,7 @@ func (s *ApiServer) Start() error {
 	routes.NewCartRoutes( cartRepo, userRepo, orderRepo, paymentRepo, addressRepo).RegisterCartRoutes(subrouter)
 	routes.NewOrderRoutes( orderRepo, userRepo).RegisterOrderRoutes(subrouter)
 	routes.NewPaymentRoutes( paymentRepo, userRepo).RegisterPaymentRoutes(subrouter)
+	routes.NewAddressRoutes( addressRepo).RegisterAddressRoutes(subrouter)
 
 	log.Println("Listening on ...", s.addr)
 	
