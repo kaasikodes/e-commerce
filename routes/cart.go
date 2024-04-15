@@ -14,19 +14,21 @@ type CartRoutes struct {
 	userRepo types.UserRepository
 	orderRepo types.OrderRepository
 	paymentRepo types.PaymentRepository
+	addressRepo types.AddressRepository
 }
 
-func NewCartRoutes(  cartRepo types.CartRepository,  userRepo types.UserRepository, orderRepo types.OrderRepository, paymentRepo types.PaymentRepository) *CartRoutes {
+func NewCartRoutes(  cartRepo types.CartRepository,  userRepo types.UserRepository, orderRepo types.OrderRepository, paymentRepo types.PaymentRepository, addressRepo types.AddressRepository) *CartRoutes {
 	return &CartRoutes{
 		cartRepo: cartRepo,
 		userRepo: userRepo,
 		orderRepo: orderRepo,
 		paymentRepo: paymentRepo,
+		addressRepo: addressRepo,
 	}
 }
 
 func (c *CartRoutes) RegisterCartRoutes (router *mux.Router){
-	controller := controllers.NewCartController(c.cartRepo, c.orderRepo, c.paymentRepo)
+	controller := controllers.NewCartController(c.cartRepo, c.orderRepo, c.paymentRepo, c.addressRepo)
 	middlewareChain := middleware.MiddlewareChain(middleware.RequireAuthMiddleware(c.userRepo))
 	
 	router.HandleFunc("/cart", middlewareChain(controller.SaveCartHandler)).Methods(http.MethodPost)

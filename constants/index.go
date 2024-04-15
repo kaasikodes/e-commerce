@@ -38,6 +38,7 @@ const (
 	JWTExpirationTime = time.Hour * 24
 	PaystackSecretKey = "sk_test_dc0078426d6a4b0cf15b370c15a61de841a23f78"
 	PaystackPublicKey = "pk_test_8ad0429e25af1f59ecf24104442f56ee4bbb39fe"
+	AppVersion = "1.0.0"
 	
 	
 	

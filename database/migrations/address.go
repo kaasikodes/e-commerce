@@ -57,8 +57,10 @@ func CreateAddressTable(db *sql.DB) error {
 		StreetAddress VARCHAR(255) NOT NULL,
 		LgaID VARCHAR(255) NOT NULL,
 		StateID VARCHAR(255) NOT NULL,
+		CountryID VARCHAR(255) NOT NULL,
 		FOREIGN KEY (LgaID) REFERENCES Lga(ID),
-		FOREIGN KEY (StateID) REFERENCES State(ID)
+		FOREIGN KEY (StateID) REFERENCES State(ID),
+		FOREIGN KEY (CountryID) REFERENCES Country(ID)
 	)`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

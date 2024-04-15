@@ -13,13 +13,15 @@ type CartController struct {
 	cartRepo types.CartRepository
 	orderRepo types.OrderRepository
 	paymentRepo types.PaymentRepository
+	addressRepo types.AddressRepository
 }
 
-func NewCartController(cartRepo types.CartRepository, orderRepo types.OrderRepository, paymentRepo types.PaymentRepository) *CartController {
+func NewCartController(cartRepo types.CartRepository, orderRepo types.OrderRepository, paymentRepo types.PaymentRepository, addressRepo types.AddressRepository) *CartController {
 	return &CartController{
 		cartRepo: cartRepo,
 		orderRepo: orderRepo,
 		paymentRepo: paymentRepo,
+		addressRepo: addressRepo,
 	}
 }
 
@@ -89,6 +91,21 @@ func (c *CartController) CheckoutCartHandler(w http.ResponseWriter, r *http.Requ
 	cartRepo := c.cartRepo
 	orderRepo := c.orderRepo
 	paymentRepo := c.paymentRepo
+	addressRepo := c.addressRepo
+
+	var payload types.CartCheckoutInput
+	
+	if err:= utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, []error{err})
+		return
+		
+	}
+	errParsed := utils.ValidatePayload(payload)
+	if len(errParsed) > 0{
+	
+		utils.WriteError(w, http.StatusBadRequest, constants.MsgValidationError, errParsed)
+		return
+	}
 	user, err := utils.RetrieveUserFromRequestContext(r)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, constants.MsgInternalServerError, []error{err})
@@ -119,8 +136,11 @@ func (c *CartController) CheckoutCartHandler(w http.ResponseWriter, r *http.Requ
 			Quantity: item.Quantity,
 		})
 	}
-	// virtualOrder.DeliveryAddressID, _ = utils.GenerateRandomID(10)
-	virtualOrder.DeliveryAddressID = "test"
+	virtualOrder.DeliveryAddressID, err = addressRepo.CreateAddress(payload.DeliveryAddress)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "Error while creating address for cart!", []error{err})
+		return
+	}
 	orderId, err := orderRepo.CreateOrder(createOrderInput, customerId, virtualOrder.DeliveryAddressID)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "Error while creating order for cart!", []error{err})

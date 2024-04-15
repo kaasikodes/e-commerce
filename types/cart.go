@@ -1,6 +1,8 @@
 package types
 
-import "github.com/kaasikodes/e-commerce-go/models"
+import (
+	"github.com/kaasikodes/e-commerce-go/models"
+)
 
 type CartItemInput struct {
 	ProductID string `json:"productId" validate:"required"`
@@ -8,6 +10,9 @@ type CartItemInput struct {
 }
 type SaveCartInput struct {
 	Items []CartItemInput `json:"items" validate:"required"`
+}
+type CartCheckoutInput struct {
+	DeliveryAddress AddressInput `json:"deliveryAddress" validate:"required"`
 }
 
 type CartRepository interface {

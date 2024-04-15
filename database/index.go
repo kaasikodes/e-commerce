@@ -8,6 +8,7 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/kaasikodes/e-commerce-go/constants"
 	"github.com/kaasikodes/e-commerce-go/database/migrations"
+	"github.com/kaasikodes/e-commerce-go/database/seeders"
 	"github.com/kaasikodes/e-commerce-go/utils"
 )
 
@@ -15,8 +16,9 @@ import (
 // TODO: Add database connection
 // TODO: Add database queries to create the needed tables
 
-func MakeConnection() (*sql.DB, error) {
+func MakeConnection() (*sql.DB, bool, error) {
 	defer utils.Recover()
+	seedDBData := flag.Bool("seed_db_data", false, "This determines whether to seed the database");
 
 
 	dbUserName := flag.String("db_username", constants.DbUser, "This is the name of the database user");
@@ -45,7 +47,7 @@ func MakeConnection() (*sql.DB, error) {
 	err = db.Ping()
 	fmt.Println("Checking database connection .........")
 	if(err != nil){
-		return nil, err
+		return nil, *seedDBData,err
 	}
 	db.SetConnMaxLifetime(constants.DBMaxConnectionLifeTime)
 	db.SetMaxOpenConns(constants.DBMaxOpenConnections)
@@ -56,16 +58,17 @@ func MakeConnection() (*sql.DB, error) {
 	// fmt.Println(cfg.FormatDSN())
 	// fmt.Println(flag.Args())
 
-	return db, nil
+	return db, *seedDBData,nil
 
 }
-func  DropTables()  {
+func  DropTables(db *sql.DB)  {
 	// TODO: Add drop tables queries
 	
 }
 
+
 func SetupDB( ) (*sql.DB, error){
-	db, err := MakeConnection()
+	db, seedDBData, err := MakeConnection()
 	if err != nil {
 		return nil, err
 		
@@ -73,10 +76,25 @@ func SetupDB( ) (*sql.DB, error){
 
 	CreateTables(db)
 	
+	if(seedDBData){
+		CreateSeedData(db)
+	}
+	
 	return db, nil
 
 }
 
+func CreateSeedData(db *sql.DB)  {
+	err := seeders.AddCountries(db)
+	utils.ErrHandler(err,)
+	err = seeders.AddStates(db)
+	utils.ErrHandler(err)
+	err = seeders.AddLGAs(db)
+	utils.ErrHandler(err)
+	err = seeders.AddAddresses(db)
+	utils.ErrHandler(err)
+	
+}
 func  CreateTables(db *sql.DB)  {
 	
 

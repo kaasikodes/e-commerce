@@ -35,13 +35,15 @@ func (s *ApiServer) Start() error {
 	cartRepo := services.NewCartRepository(s.db)
 	orderRepo := services.NewOrderRepository(s.db)
 	paymentRepo := services.NewPaymentRepository(s.db)
+	addressRepo := services.NewAddressRepository(s.db)
 
 	// define routes and map them to controllers
+	routes.NewHomeRoutes().RegisterHomeRoutes(subrouter)
 	routes.NewAuthRoutes(userRepo, tokenRepo).RegisterAuthRoutes(subrouter)
 	routes.NewCategoryRoutes(categoryRepo, userRepo).RegisterCategoryRoutes(subrouter)
 	routes.NewUserRoutes(userRepo).RegisterUserRoutes(subrouter)
 	routes.NewProductRoutes(userRepo, productRepo, categoryRepo).RegisterProductRoutes(subrouter)
-	routes.NewCartRoutes( cartRepo, userRepo, orderRepo, paymentRepo).RegisterCartRoutes(subrouter)
+	routes.NewCartRoutes( cartRepo, userRepo, orderRepo, paymentRepo, addressRepo).RegisterCartRoutes(subrouter)
 	routes.NewOrderRoutes( orderRepo, userRepo).RegisterOrderRoutes(subrouter)
 	routes.NewPaymentRoutes( paymentRepo, userRepo).RegisterPaymentRoutes(subrouter)
 
